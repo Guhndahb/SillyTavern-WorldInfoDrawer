@@ -9,6 +9,15 @@ A warning: I have no idea what I'm doing with my life, and this was completely v
 - Includes an **Order Helper** panel for mass reordering: drag entries, pick which items to update, and bulk-apply new order values with a per-book or global sort preference toggle.
 - Provides one-click collapse/expand for all books and a quick refresh to pull the latest lorebook state without reloading the page.
 
+### Interface
+<img width="960" height="471" alt="editing_entry" src="https://github.com/user-attachments/assets/a5cc31c5-c0a8-4a4d-a8c7-ae4c609c7a9a" />
+
+### Individual Lorebook Menu
+<img width="379" height="473" alt="individual_lorebook_menu" src="https://github.com/user-attachments/assets/2a1227a7-7ca1-4642-b671-d4265f462a3c" />
+
+### Order Helper
+<img width="960" height="468" alt="order_helper" src="https://github.com/user-attachments/assets/d5d1f66f-bfa4-4548-b54c-d9da729b03d5" />
+
 ## Main changes from Lenny's original version
 
 - New “fill empty titles” toggle to auto-label entries that don’t have a title.
@@ -39,9 +48,9 @@ A warning: I have no idea what I'm doing with my life, and this was completely v
 
 ## Must-have extensions (optional but recommended)
 
-https://github.com/aikohanasaki/SillyTavern-WorldInfoLocks
-https://github.com/LenAnderson/SillyTavern-WorldInfoBulkEdit
-https://github.com/aikohanasaki/SillyTavern-WorldInfoInfo
+- https://github.com/aikohanasaki/SillyTavern-WorldInfoLocks
+- https://github.com/LenAnderson/SillyTavern-WorldInfoBulkEdit
+- https://github.com/aikohanasaki/SillyTavern-WorldInfoInfo
 
 ## Contributing
 
