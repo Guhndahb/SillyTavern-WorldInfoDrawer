@@ -124,6 +124,16 @@ const appendSortOptions = (select, currentSort, currentDirection)=>{
     }
 };
 
+const executeSlashCommand = async(command)=>{
+    try {
+        const parser = new SlashCommandParser();
+        const closure = parser.parse(command);
+        await closure.execute();
+    } catch (error) {
+        console.error('Failed to execute slash command', error);
+    }
+};
+
 const getSortLabel = (sort, direction)=>SORT_OPTIONS.find(([label, s, d])=>s === sort && d === direction)?.[0];
 const safeToSorted = (array, comparator)=>typeof array.toSorted === 'function'
     ? array.toSorted(comparator)
@@ -1457,6 +1467,40 @@ const renderBook = async(name, before = null, bookData = null)=>{
                                         orderHelper.append(txt);
                                     }
                                     menu.append(orderHelper);
+                                }
+                                const stloButton = document.createElement('div'); {
+                                    stloButton.id = 'lorebook_ordering_button';
+                                    stloButton.classList.add('stwid--item');
+                                    stloButton.classList.add('stwid--stlo');
+                                    stloButton.dataset.i18n = '[title]stlo.button.configure; [aria-label]stlo.button.configure';
+                                    stloButton.title = 'Configure STLO Priority & Budget';
+                                    stloButton.setAttribute('aria-label', 'Configure STLO Priority & Budget');
+                                    stloButton.tabIndex = 0;
+                                    stloButton.setAttribute('role', 'button');
+                                    stloButton.addEventListener('click', async(evt)=>{
+                                        evt.stopPropagation();
+                                        const escapedName = name.replaceAll('"', '\\"');
+                                        await executeSlashCommand(`/stlo "${escapedName}"`);
+                                        blocker.remove();
+                                        menuTrigger.style.anchorName = '';
+                                    });
+                                    stloButton.addEventListener('keydown', (evt)=>{
+                                        if (evt.key === 'Enter' || evt.key === ' ') {
+                                            evt.preventDefault();
+                                            stloButton.click();
+                                        }
+                                    });
+                                    const i = document.createElement('i'); {
+                                        i.classList.add('stwid--icon');
+                                        i.classList.add('fa-solid', 'fa-fw', 'fa-bars-staggered');
+                                        stloButton.append(i);
+                                    }
+                                    const txt = document.createElement('span'); {
+                                        txt.classList.add('stwid--label');
+                                        txt.textContent = 'Configure STLO';
+                                        stloButton.append(txt);
+                                    }
+                                    menu.append(stloButton);
                                 }
                                 const exp = document.createElement('div'); {
                                     exp.classList.add('stwid--item');
