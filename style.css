@@ -398,6 +398,10 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   color: var(--SmartThemeEmColor);
   font-size: smaller;
 }
+.stwid--orderHelper .stwid--actions .stwid--inputWrap .stwid--input {
+  width: 33%;
+  min-width: 4em;
+}
 .stwid--orderHelper .stwid--filter {
   background-color: var(--SmartThemeBlurTintColor);
   display: none;
@@ -559,6 +563,25 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   font-size: 0.75em;
   font-style: italic;
   line-height: 1;
+}
+.stwid--orderTable tr td .stwid--outlet {
+  color: var(--SmartThemeBodyColor);
+  font-size: 0.85em;
+  min-width: 6em;
+  word-break: break-word;
+}
+.stwid--orderTable tr td .stwid--outlet input[name="outletName"] {
+  width: 100%;
+  min-width: 6em;
+  font-size: 0.85em;
+}
+.stwid--orderTable tr td .stwid--position {
+  font-size: 0.9em;
+}
+.stwid--orderTable tr td input[name="depth"], .stwid--orderTable tr td input[name="order"], .stwid--orderTable tr td input[name="selective_probability"] {
+  width: 33%;
+  min-width: 4em;
+  font-size: 0.9em;
 }
 .stwid--orderTable tr td .stwid--enabled {
   color: var(--SmartThemeQuoteColor);
