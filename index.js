@@ -1911,6 +1911,9 @@ const addDrawer = ()=>{
     document.body.classList.add('stwid--');
     const holder = document.querySelector('#wi-holder');
     const drawerContent = document.querySelector('#WorldInfo'); {
+        const SPLITTER_STORAGE_KEY = 'stwid--list-width';
+        const MIN_LIST_WIDTH = 150;
+        const MIN_EDITOR_WIDTH = 300;
         let searchEntriesInput;
         let searchInput;
         const body = document.createElement('div'); {
@@ -2202,6 +2205,41 @@ const addDrawer = ()=>{
                     list.append(books);
                 }
                 body.append(list);
+            }
+            const splitter = document.createElement('div'); {
+                splitter.classList.add('stwid--splitter');
+                body.append(splitter);
+                const applyListWidth = (value)=>{
+                    const clamped = Math.max(MIN_LIST_WIDTH, value);
+                    list.style.flexBasis = `${clamped}px`;
+                    list.style.width = `${clamped}px`;
+                };
+                const storedWidth = Number.parseInt(localStorage.getItem(SPLITTER_STORAGE_KEY) ?? '', 10);
+                if (!Number.isNaN(storedWidth)) {
+                    applyListWidth(storedWidth);
+                }
+                splitter.addEventListener('pointerdown', (evt)=>{
+                    evt.preventDefault();
+                    splitter.setPointerCapture(evt.pointerId);
+                    const startX = evt.clientX;
+                    const startWidth = list.getBoundingClientRect().width;
+                    const splitterWidth = splitter.getBoundingClientRect().width || 6;
+                    const onMove = (moveEvt)=>{
+                        const delta = moveEvt.clientX - startX;
+                        const maxWidth = Math.max(MIN_LIST_WIDTH, body.clientWidth - splitterWidth - MIN_EDITOR_WIDTH);
+                        const nextWidth = Math.min(Math.max(MIN_LIST_WIDTH, startWidth + delta), maxWidth);
+                        applyListWidth(nextWidth);
+                    };
+                    const onUp = (upEvt)=>{
+                        splitter.releasePointerCapture(upEvt.pointerId);
+                        window.removeEventListener('pointermove', onMove);
+                        window.removeEventListener('pointerup', onUp);
+                        const finalWidth = Math.round(list.getBoundingClientRect().width);
+                        localStorage.setItem(SPLITTER_STORAGE_KEY, String(finalWidth));
+                    };
+                    window.addEventListener('pointermove', onMove);
+                    window.addEventListener('pointerup', onUp);
+                });
             }
             const editor = document.createElement('div'); {
                 dom.editor = editor;
