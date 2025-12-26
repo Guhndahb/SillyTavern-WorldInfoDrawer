@@ -558,6 +558,12 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   font-size: 0.6em;
   line-height: 1;
 }
+.stwid--orderTable tr td:has(.stwid--entry) .stwid--commentLink {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  cursor: pointer;
+}
 .stwid--orderTable tr td:has(.stwid--entry) .stwid--key {
   color: var(--SmartThemeEmColor);
   font-size: 0.75em;
