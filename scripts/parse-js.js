@@ -1,5 +1,5 @@
-const fs = require('fs');
-const vm = require('vm');
+import fs from 'node:fs';
+import vm from 'node:vm';
 
 const files = ['index.js', 'src/Settings.js'];
 const errors = [];
