@@ -7,22 +7,7 @@ import { renderTemplateAsync } from '../../../templates.js';
 import { debounce, debounceAsync, delay, download, getSortableDelay, isTrueBoolean, uuidv4 } from '../../../utils.js';
 import { createNewWorldInfo, createWorldInfoEntry, deleteWIOriginalDataValue, deleteWorldInfoEntry, getFreeWorldName, getWorldEntry, loadWorldInfo, onWorldInfoChange, saveWorldInfo, selected_world_info, world_info, world_names } from '../../../world-info.js';
 import { Settings, SORT, SORT_DIRECTION } from './src/Settings.js';
-
-/**
- * Creates a deferred promise that can be resolved or rejected externally.
- * @returns {{ promise: Promise<unknown>, resolve: (value?: unknown) => void, reject: (reason?: any) => void }}
- */
-const createDeferred = ()=>{
-    /**@type {(value?: unknown) => void}*/
-    let resolve;
-    /**@type {(reason?: any) => void}*/
-    let reject;
-    const promise = new Promise((res, rej)=>{
-        resolve = res;
-        reject = rej;
-    });
-    return { promise, resolve, reject };
-};
+import { appendSortOptions, createDeferred, getSortLabel, safeToSorted } from './src/utils.js';
 
 const NAME = new URL(import.meta.url).pathname.split('/').at(-2);
 const watchCss = async()=>{
@@ -92,38 +77,6 @@ const dom = {
 
 const ORDER_HELPER_SORT_STORAGE_KEY = 'stwid--order-helper-sort';
 const ORDER_HELPER_HIDE_KEYS_STORAGE_KEY = 'stwid--order-helper-hide-keys';
-/**
- * Sort options available to dropdowns. Each tuple is
- * [Label, Sort Logic, Sort Direction].
- * @type {[string, SORT, SORT_DIRECTION][]}
- */
-const SORT_OPTIONS = [
-    ['Title A-Z', SORT.TITLE, SORT_DIRECTION.ASCENDING],
-    ['Title Z-A', SORT.TITLE, SORT_DIRECTION.DESCENDING],
-    ['Position ↗', SORT.POSITION, SORT_DIRECTION.ASCENDING],
-    ['Position ↘', SORT.POSITION, SORT_DIRECTION.DESCENDING],
-    ['Depth ↗', SORT.DEPTH, SORT_DIRECTION.ASCENDING],
-    ['Depth ↘', SORT.DEPTH, SORT_DIRECTION.DESCENDING],
-    ['Order ↗', SORT.ORDER, SORT_DIRECTION.ASCENDING],
-    ['Order ↘', SORT.ORDER, SORT_DIRECTION.DESCENDING],
-    ['UID ↗', SORT.UID, SORT_DIRECTION.ASCENDING],
-    ['UID ↘', SORT.UID, SORT_DIRECTION.DESCENDING],
-    ['Trigger ↗', SORT.TRIGGER, SORT_DIRECTION.ASCENDING],
-    ['Trigger ↘', SORT.TRIGGER, SORT_DIRECTION.DESCENDING],
-    ['Tokens ↗', SORT.LENGTH, SORT_DIRECTION.ASCENDING],
-    ['Tokens ↘', SORT.LENGTH, SORT_DIRECTION.DESCENDING],
-];
-
-const appendSortOptions = (select, currentSort, currentDirection)=>{
-    for (const [label, sort, direction] of SORT_OPTIONS) {
-        const opt = document.createElement('option');
-        opt.value = JSON.stringify({ sort, direction });
-        opt.textContent = label;
-        opt.selected = sort == currentSort && direction == currentDirection;
-        select.append(opt);
-    }
-};
-
 const executeSlashCommand = async(command)=>{
     try {
         const parser = new SlashCommandParser();
@@ -134,10 +87,6 @@ const executeSlashCommand = async(command)=>{
     }
 };
 
-const getSortLabel = (sort, direction)=>SORT_OPTIONS.find(([label, s, d])=>s === sort && d === direction)?.[0];
-const safeToSorted = (array, comparator)=>typeof array.toSorted === 'function'
-    ? array.toSorted(comparator)
-    : array.slice().sort(comparator);
 const orderHelperState = (()=>{
     const state = { sort:SORT.TITLE, direction:SORT_DIRECTION.ASCENDING, book:null, hideKeys:false };
     try {
