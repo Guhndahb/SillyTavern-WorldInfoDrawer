@@ -2,7 +2,26 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const files = ['index.js', 'src/Settings.js'];
+const collectJsFiles = (startDir)=>{
+  const entries = fs.readdirSync(startDir, { withFileTypes: true });
+  const paths = [];
+  for (const entry of entries) {
+    const fullPath = path.join(startDir, entry.name);
+    if (entry.isDirectory()) {
+      paths.push(...collectJsFiles(fullPath));
+      continue;
+    }
+    if (entry.isFile() && entry.name.endsWith('.js')) {
+      paths.push(fullPath);
+    }
+  }
+  return paths;
+};
+
+const files = [
+  'index.js',
+  ...collectJsFiles(path.resolve('src')),
+];
 const errors = [];
 const repoRoot = process.cwd();
 
