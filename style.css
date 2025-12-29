@@ -658,20 +658,6 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   min-width: 5em;
   text-align: center;
 }
-.stwid--orderTable tr th[data-col="strategy"],
-.stwid--orderTable tr td[data-col="strategy"],
-.stwid--orderTable tr th[data-col="position"],
-.stwid--orderTable tr td[data-col="position"],
-.stwid--orderTable tr th[data-col="depth"],
-.stwid--orderTable tr td[data-col="depth"],
-.stwid--orderTable tr th[data-col="outlet"],
-.stwid--orderTable tr td[data-col="outlet"],
-.stwid--orderTable tr th[data-col="order"],
-.stwid--orderTable tr td[data-col="order"],
-.stwid--orderTable tr th[data-col="trigger"],
-.stwid--orderTable tr td[data-col="trigger"] {
-  text-align: center;
-}
 .stwid--orderTable tr td {
   color: rgb(from var(--SmartThemeBodyColor) r g b / 0.75);
   font-size: small;
@@ -755,3 +741,4 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   padding-left: 0.5em;
   font-size: small;
 }
+
