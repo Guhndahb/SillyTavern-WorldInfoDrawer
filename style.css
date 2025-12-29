@@ -463,7 +463,7 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   position: absolute;
   top: calc(100% + 0.35em);
   left: 0;
-  background-color: var(--SmartThemeBlurTintColor);
+  background-color: color-mix(in srgb, var(--SmartThemeBlurTintColor) 85%, black 15%);
   border: 1px solid var(--SmartThemeBorderColor);
   border-radius: 6px;
   padding: 0.5em;
@@ -482,6 +482,10 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   gap: 0.4em;
   font-size: 0.9em;
   cursor: pointer;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnOption input[type="checkbox"] {
+  width: 0.85em;
+  height: 0.85em;
 }
 .stwid--orderHelper .stwid--actions .stwid--actionsRight {
   margin-left: auto;

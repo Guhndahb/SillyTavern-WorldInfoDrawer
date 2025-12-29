@@ -532,7 +532,7 @@ body.stwid-- #WorldInfo {
                                 position: absolute;
                                 top: calc(100% + 0.35em);
                                 left: 0;
-                                background-color: var(--SmartThemeBlurTintColor);
+                                background-color: color-mix(in srgb, var(--SmartThemeBlurTintColor) 85%, black 15%);
                                 border: 1px solid var(--SmartThemeBorderColor);
                                 border-radius: 6px;
                                 padding: 0.5em;
@@ -553,6 +553,11 @@ body.stwid-- #WorldInfo {
                                 gap: 0.4em;
                                 font-size: 0.9em;
                                 cursor: pointer;
+
+                                input[type="checkbox"] {
+                                        width: 0.85em;
+                                        height: 0.85em;
+                                }
                         }
                 }
 

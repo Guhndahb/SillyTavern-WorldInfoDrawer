@@ -204,10 +204,6 @@ export const initOrderHelper = ({
                             labelText.innerHTML = 'Column<br>Visibility:';
                             labelWrap.append(labelText);
                         }
-                        const icon = document.createElement('i'); {
-                            icon.classList.add('fa-solid', 'fa-fw', 'fa-columns');
-                            labelWrap.append(icon);
-                        }
                         columnVisibilityWrap.append(labelWrap);
                     }
                     const menuWrap = document.createElement('div'); {
