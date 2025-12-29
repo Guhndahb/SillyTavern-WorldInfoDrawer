@@ -432,6 +432,42 @@ body.stwid-- #WorldInfo {
                 }
         }
 
+        &.stwid--hide-col-strategy {
+                [data-col="strategy"] {
+                        display: none;
+                }
+        }
+
+        &.stwid--hide-col-position {
+                [data-col="position"] {
+                        display: none;
+                }
+        }
+
+        &.stwid--hide-col-depth {
+                [data-col="depth"] {
+                        display: none;
+                }
+        }
+
+        &.stwid--hide-col-outlet {
+                [data-col="outlet"] {
+                        display: none;
+                }
+        }
+
+        &.stwid--hide-col-order {
+                [data-col="order"] {
+                        display: none;
+                }
+        }
+
+        &.stwid--hide-col-trigger {
+                [data-col="trigger"] {
+                        display: none;
+                }
+        }
+
         .stwid--actions {
                 flex: 0 0 auto;
 
@@ -461,6 +497,67 @@ body.stwid-- #WorldInfo {
                         .stwid--input {
                                 width: 33%;
                                 min-width: 4em;
+                        }
+                }
+
+                .stwid--columnVisibility {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5em;
+                        color: var(--SmartThemeEmColor);
+                        font-size: smaller;
+                        position: relative;
+
+                        .stwid--columnVisibilityLabel {
+                                display: flex;
+                                align-items: center;
+                                gap: 0.35em;
+                        }
+
+                        .stwid--columnVisibilityText {
+                                line-height: 1.1;
+                        }
+
+                        .stwid--columnMenuWrap {
+                                position: relative;
+                        }
+
+                        .stwid--columnMenuButton {
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 0.25em;
+                        }
+
+                        .stwid--columnMenu {
+                                position: absolute;
+                                top: calc(100% + 0.35em);
+                                left: 0;
+                                background-color: color-mix(in srgb, var(--SmartThemeBlurTintColor) 85%, black 15%);
+                                border: 1px solid var(--SmartThemeBorderColor);
+                                border-radius: 6px;
+                                padding: 0.5em;
+                                min-width: 10em;
+                                display: none;
+                                flex-direction: column;
+                                gap: 0.35em;
+                                z-index: 3;
+
+                                &.stwid--active {
+                                        display: flex;
+                                }
+                        }
+
+                        .stwid--columnOption {
+                                display: flex;
+                                align-items: center;
+                                gap: 0.4em;
+                                font-size: 0.9em;
+                                cursor: pointer;
+
+                                input[type="checkbox"] {
+                                        width: 0.85em;
+                                        height: 0.85em;
+                                }
                         }
                 }
 
