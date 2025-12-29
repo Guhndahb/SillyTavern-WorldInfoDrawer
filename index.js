@@ -7,6 +7,7 @@ import { renderTemplateAsync } from '../../../templates.js';
 import { debounce, debounceAsync, delay, download, getSortableDelay, isTrueBoolean, uuidv4 } from '../../../utils.js';
 import { createNewWorldInfo, createWorldInfoEntry, deleteWIOriginalDataValue, deleteWorldInfoEntry, getFreeWorldName, getWorldEntry, loadWorldInfo, onWorldInfoChange, saveWorldInfo, selected_world_info, world_info, world_names } from '../../../world-info.js';
 import { Settings, SORT, SORT_DIRECTION } from './src/Settings.js';
+import { initListPanel, refreshList } from './src/listPanel.js';
 import { entryState, renderEntry, setWorldEntryContext } from './src/worldEntry.js';
 import { appendSortOptions, createDeferred, getSortLabel, safeToSorted } from './src/utils.js';
 
@@ -206,49 +207,12 @@ const sortEntries = (entries, sortLogic = null, sortDirection = null)=>{
 };
 
 const cache = {};
-const collapseStates = {};
-
-const hasExpandedBooks = ()=>Object.values(cache).some((book)=>{
-    const entryList = book?.dom?.entryList;
-    return entryList && !entryList.classList.contains('stwid--isCollapsed');
-});
+let listPanelApi;
+let selectionState;
 
 const METADATA_NAMESPACE = 'stwid';
 const METADATA_SORT_KEY = 'sort';
 const cloneMetadata = (metadata)=>structuredClone(metadata ?? {});
-const setCollapseState = (name, isCollapsed)=>{
-    collapseStates[name] = Boolean(isCollapsed);
-};
-const updateCollapseAllToggle = ()=>{
-    const hasExpanded = hasExpandedBooks();
-    const btn = dom.collapseAllToggle;
-    if (!btn) return;
-    const icon = btn.querySelector('i');
-    icon?.classList.toggle('fa-compress', hasExpanded);
-    icon?.classList.toggle('fa-expand', !hasExpanded);
-    const label = hasExpanded ? 'Collapse All Books' : 'Expand All Books';
-    btn.title = label;
-    btn.setAttribute('aria-label', label);
-    btn.setAttribute('aria-pressed', hasExpanded ? 'true' : 'false');
-};
-const applyCollapseState = (name)=>{
-    const isCollapsed = collapseStates[name];
-    const world = cache[name];
-    if (isCollapsed === undefined || !world?.dom?.entryList || !world?.dom?.collapseToggle) return;
-    world.dom.entryList.classList.toggle('stwid--isCollapsed', isCollapsed);
-    if (isCollapsed) {
-        world.dom.collapseToggle.classList.remove('fa-chevron-up');
-        world.dom.collapseToggle.classList.add('fa-chevron-down');
-    } else {
-        world.dom.collapseToggle.classList.add('fa-chevron-up');
-        world.dom.collapseToggle.classList.remove('fa-chevron-down');
-    }
-};
-const setBookCollapsed = (name, isCollapsed)=>{
-    setCollapseState(name, isCollapsed);
-    applyCollapseState(name);
-    updateCollapseAllToggle();
-};
 const getSortFromMetadata = (metadata)=>{
     const sortData = metadata?.[METADATA_NAMESPACE]?.[METADATA_SORT_KEY];
     if (!sortData) return null;
@@ -257,68 +221,10 @@ const getSortFromMetadata = (metadata)=>{
     if (!Object.values(SORT).includes(sort) || !Object.values(SORT_DIRECTION).includes(direction)) return null;
     return { sort, direction };
 };
-const getBookSortChoice = (name)=>{
-    const bookSort = Settings.instance.useBookSorts ? cache[name]?.sort : null;
-    return {
-        sort: bookSort?.sort ?? Settings.instance.sortLogic,
-        direction: bookSort?.direction ?? Settings.instance.sortDirection,
-    };
-};
-const setCacheMetadata = (name, metadata = {})=>{
-    cache[name].metadata = cloneMetadata(metadata);
-    cache[name].sort = getSortFromMetadata(cache[name].metadata);
-};
 const buildSavePayload = (name)=>({
     entries: structuredClone(cache[name].entries),
     metadata: cloneMetadata(cache[name].metadata),
 });
-const setBookSortPreference = async(name, sort = null, direction = null)=>{
-    const hasSort = Boolean(sort && direction);
-    cache[name].metadata ??= {};
-    cache[name].metadata[METADATA_NAMESPACE] ??= {};
-    if (hasSort) {
-        cache[name].metadata[METADATA_NAMESPACE][METADATA_SORT_KEY] = { sort, direction };
-        cache[name].sort = { sort, direction };
-    } else {
-        delete cache[name].metadata[METADATA_NAMESPACE][METADATA_SORT_KEY];
-        if (Object.keys(cache[name].metadata[METADATA_NAMESPACE]).length === 0) {
-            delete cache[name].metadata[METADATA_NAMESPACE];
-        }
-        if (Object.keys(cache[name].metadata).length === 0) {
-            cache[name].metadata = {};
-        }
-        cache[name].sort = null;
-    }
-    await saveWorldInfo(name, buildSavePayload(name), true);
-    sortEntriesIfNeeded(name);
-};
-
-const clearBookSortPreferences = async()=>{
-    for (const [name, data] of Object.entries(cache)) {
-        const hasSortPreference = Boolean(data.metadata?.[METADATA_NAMESPACE]?.[METADATA_SORT_KEY]);
-        if (!hasSortPreference) continue;
-        await setBookSortPreference(name, null, null);
-    }
-};
-
-const sortEntriesIfNeeded = (name)=>{
-    const { sort, direction } = getBookSortChoice(name);
-    const sorted = sortEntries(Object.values(cache[name].entries), sort, direction);
-    let needsSort = false;
-    let i = 0;
-    for (const e of sorted) {
-        if (cache[name].dom.entryList.children[i] != cache[name].dom.entry[e.uid].root) {
-            needsSort = true;
-            break;
-        }
-        i++;
-    }
-    if (needsSort) {
-        for (const e of sorted) {
-            cache[name].dom.entryList.append(cache[name].dom.entry[e.uid].root);
-        }
-    }
-};
 const updateSettingsChange = ()=>{
     console.log('[STWID]', '[UPDATE-SETTINGS]');
     for (const [name, world] of Object.entries(cache)) {
@@ -350,7 +256,7 @@ const updateWIChange = async(name = null, data = null)=>{
         else {
             const before = Object.keys(cache).find(it=>it.toLowerCase().localeCompare(name.toLowerCase()) == 1);
             const data = await loadWorldInfo(name);
-            await renderBook(name, before ? cache[before].dom.root : null, data);
+            await listPanelApi.renderBook(name, before ? cache[before].dom.root : null, data);
         }
     }
     if (name && cache[name]) {
@@ -448,10 +354,10 @@ const updateWIChange = async(name = null, data = null)=>{
         }
         cache[name].entries = world.entries;
         const prevSort = cache[name].sort;
-        setCacheMetadata(name, world.metadata);
+        listPanelApi.setCacheMetadata(name, world.metadata);
         const sortChanged = JSON.stringify(prevSort) !== JSON.stringify(cache[name].sort);
         if (hasUpdate || sortChanged) {
-            sortEntriesIfNeeded(name);
+            listPanelApi.sortEntriesIfNeeded(name);
         }
     }
     updateWIChangeStarted = createDeferred();
@@ -486,7 +392,7 @@ export const jumpToEntry = async(name, uid)=>{
     if (dom.order.toggle.classList.contains('stwid--active')) {
         dom.order.toggle.click();
     }
-    setBookCollapsed(name, false);
+    listPanelApi.setBookCollapsed(name, false);
     cache[name].dom.entry[uid].root.scrollIntoView({ block:'center', inline:'center' });
     if (currentEditor?.name != name || currentEditor?.uid != uid) {
         cache[name].dom.entry[uid].root.click();
@@ -565,7 +471,7 @@ const applyOrderHelperSortToDom = ()=>{
 const focusWorldEntry = (book, uid)=>{
     const entryDom = cache?.[book]?.dom?.entry?.[uid]?.root;
     if (!entryDom) return;
-    setBookCollapsed(book, false);
+    listPanelApi.setBookCollapsed(book, false);
     entryDom.scrollIntoView({ behavior:'smooth', block:'center' });
     entryDom.click();
 };
@@ -1138,528 +1044,6 @@ const openOrderHelper = (book = null)=>{
 };
 
 
-/** Last clickd/selected DOM (WI entry) @type {HTMLElement} */
-let selectLast = null;
-/** Name of the book to select WI entries from @type {string} */
-let selectFrom = null;
-/**@type {'ctrl'|'shift'} */
-let selectMode = null;
-/** List of selected entries (WI data) @type {{}[]} */
-let selectList = null;
-/** toastr reference showing selection help @type {JQuery<HTMLElement>} */
-let selectToast = null;
-const selectEnd = ()=>{
-    selectFrom = null;
-    selectMode = null;
-    selectList = null;
-    selectLast = null;
-    if (selectToast) {
-        toastr.clear(selectToast);
-    }
-    dom.books.classList.remove('stwid--isDragging');
-    [...dom.books.querySelectorAll('.stwid--entry.stwid--isSelected')]
-        .forEach(it=>{
-            it.classList.remove('stwid--isSelected');
-            it.removeAttribute('draggable');
-            const icon = it.querySelector('.stwid--selector > .stwid--icon');
-            icon.classList.add('fa-square');
-            icon.classList.remove('fa-square-check');
-        })
-    ;
-    [...dom.books.querySelectorAll('.stwid--book.stwid--isTarget')]
-        .forEach(it=>{
-            it.classList.remove('stwid--isTarget');
-        })
-    ;
-};
-/**
- *
- * @param {HTMLElement} entry
- */
-const selectAdd = (entry)=>{
-    entry.classList.add('stwid--isSelected');
-    entry.setAttribute('draggable', 'true');
-    const icon = entry.querySelector('.stwid--selector > .stwid--icon');
-    icon.classList.remove('fa-square');
-    icon.classList.add('fa-square-check');
-};
-const selectRemove = (entry)=>{
-    entry.classList.remove('stwid--isSelected');
-    entry.setAttribute('draggable', 'false');
-    const icon = entry.querySelector('.stwid--selector > .stwid--icon');
-    icon.classList.add('fa-square');
-    icon.classList.remove('fa-square-check');
-};
-setWorldEntryContext({
-    buildSavePayload,
-    cache,
-    dom,
-    getWorldEntry,
-    renderTemplateAsync,
-    saveWorldInfo,
-    selectAdd,
-    selectEnd,
-    selectRemove,
-    uuidv4,
-    get currentEditor() {
-        return currentEditor;
-    },
-    set currentEditor(value) {
-        currentEditor = value;
-    },
-    get selectFrom() {
-        return selectFrom;
-    },
-    set selectFrom(value) {
-        selectFrom = value;
-    },
-    get selectLast() {
-        return selectLast;
-    },
-    set selectLast(value) {
-        selectLast = value;
-    },
-    get selectList() {
-        return selectList;
-    },
-    set selectList(value) {
-        selectList = value;
-    },
-    get selectToast() {
-        return selectToast;
-    },
-    set selectToast(value) {
-        selectToast = value;
-    },
-});
-const renderBook = async(name, before = null, bookData = null)=>{
-    const data = bookData ?? await loadWorldInfo(name);
-    const world = { entries:{}, metadata: cloneMetadata(data.metadata), sort:getSortFromMetadata(data.metadata) };
-    for (const [k,v] of Object.entries(data.entries)) {
-        world.entries[k] = structuredClone(v);
-    }
-    world.dom = {
-        /**@type {HTMLElement} */
-        root: undefined,
-        /**@type {HTMLElement} */
-        name: undefined,
-        /**@type {HTMLElement} */
-        active: undefined,
-        /**@type {HTMLElement} */
-        entryList: undefined,
-        /**@type {{ [uid:string]:{root:HTMLElement, comment:HTMLElement, key:HTMLElement}}} */
-        entry: {},
-    };
-    cache[name] = world;
-    const book = document.createElement('div'); {
-        world.dom.root = book;
-        book.classList.add('stwid--book');
-        book.addEventListener('dragover', (evt)=>{
-            if (selectFrom === null) return;
-            evt.preventDefault();
-            book.classList.add('stwid--isTarget');
-        });
-        book.addEventListener('dragleave', (evt)=>{
-            if (selectFrom === null) return;
-            book.classList.remove('stwid--isTarget');
-        });
-        book.addEventListener('drop', async(evt)=>{
-            if (selectFrom === null) return;
-            evt.preventDefault();
-            const isCopy = evt.ctrlKey;
-            if (selectFrom != name || isCopy) {
-                const srcBook = await loadWorldInfo(selectFrom);
-                const dstBook = await loadWorldInfo(name);
-                for (const srcEntry of selectList) {
-                    const uid = srcEntry.uid;
-                    const oData = Object.assign({}, srcEntry);
-                    delete oData.uid;
-                    const dstEntry = createWorldInfoEntry(null, dstBook);
-                    Object.assign(dstEntry, oData);
-                    await saveWorldInfo(name, dstBook, true);
-                    if (!isCopy) {
-                        const deleted = await deleteWorldInfoEntry(srcBook, uid, { silent:true });
-                        if (deleted) {
-                            deleteWIOriginalDataValue(srcBook, uid);
-                        }
-                    }
-                }
-                if (selectFrom != name) {
-                    await saveWorldInfo(selectFrom, srcBook, true);
-                    updateWIChange(selectFrom, srcBook);
-                }
-                updateWIChange(name, dstBook);
-            }
-            selectEnd();
-        });
-        const head = document.createElement('div'); {
-            head.classList.add('stwid--head');
-            let collapseToggle;
-            const title = document.createElement('div'); {
-                world.dom.name = title;
-                title.classList.add('stwid--title');
-                title.textContent = name;
-                title.addEventListener('click', ()=>{
-                    const isCollapsed = !entryList.classList.contains('stwid--isCollapsed');
-                    setBookCollapsed(name, isCollapsed);
-                });
-                head.append(title);
-            }
-            const actions = document.createElement('div'); {
-                actions.classList.add('stwid--actions');
-                const active = document.createElement('input'); {
-                    world.dom.active = active;
-                    active.title = 'Globally active';
-                    active.type = 'checkbox';
-                    active.checked = selected_world_info.includes(name);
-                    active.addEventListener('click', async()=>{
-                        active.disabled = true;
-                        const select = /**@type {HTMLSelectElement}*/(document.querySelector('#world_info'));
-                        const option = select ? [...select.options].find((opt)=>opt.textContent === name) : null;
-                        if (option && select) {
-                            option.selected = active.checked;
-                            onWorldInfoChange('__notSlashCommand__');
-                        }
-                        active.disabled = false;
-                    });
-                    actions.append(active);
-                }
-                const add = document.createElement('div'); {
-                    add.classList.add('stwid--action');
-                    add.classList.add('stwid--add');
-                    add.classList.add('fa-solid', 'fa-fw', 'fa-plus');
-                    add.title = 'New Entry';
-                    add.addEventListener('click', async()=>{
-                        const data = buildSavePayload(name);
-                        const newEntry = createWorldInfoEntry(name, data);
-                        cache[name].entries[newEntry.uid] = structuredClone(newEntry);
-                        await renderEntry(newEntry, name);
-                        cache[name].dom.entry[newEntry.uid].root.click();
-                        await saveWorldInfo(name, data, true);
-                    });
-                    actions.append(add);
-                }
-                const menuTrigger = document.createElement('div'); {
-                    menuTrigger.classList.add('stwid--action');
-                    menuTrigger.classList.add('stwid--menuTrigger');
-                    menuTrigger.classList.add('fa-solid', 'fa-fw', 'fa-ellipsis-vertical');
-                    menuTrigger.addEventListener('click', ()=>{
-                        menuTrigger.style.anchorName = '--stwid--ctxAnchor';
-                        const blocker = document.createElement('div'); {
-                            blocker.classList.add('stwid--blocker');
-                            blocker.addEventListener('mousedown', (evt)=>{
-                                evt.stopPropagation();
-                            });
-                            blocker.addEventListener('pointerdown', (evt)=>{
-                                evt.stopPropagation();
-                            });
-                            blocker.addEventListener('touchstart', (evt)=>{
-                                evt.stopPropagation();
-                            });
-                            blocker.addEventListener('click', (evt)=>{
-                                evt.stopPropagation();
-                                blocker.remove();
-                                menuTrigger.style.anchorName = '';
-                            });
-                            const menu = document.createElement('div'); {
-                                menu.classList.add('stwid--menu');
-                                const rename = document.createElement('div'); {
-                                    rename.classList.add('stwid--item');
-                                    rename.classList.add('stwid--rename');
-                                    rename.addEventListener('click', async(evt)=>{
-                                        //TODO cheeky monkey
-                                        const sel = /**@type {HTMLSelectElement}*/(document.querySelector('#world_editor_select'));
-                                        sel.value = /**@type {HTMLOptionElement[]}*/([...sel.children]).find(it=>it.textContent == name).value;
-                                        sel.dispatchEvent(new Event('change', { bubbles:true }));
-                                        await delay(500);
-                                        document.querySelector('#world_popup_name_button').click();
-                                    });
-                                    const i = document.createElement('i'); {
-                                        i.classList.add('stwid--icon');
-                                        i.classList.add('fa-solid', 'fa-fw', 'fa-pencil');
-                                        rename.append(i);
-                                    }
-                                    const txt = document.createElement('span'); {
-                                        txt.classList.add('stwid--label');
-                                        txt.textContent = 'Rename Book';
-                                        rename.append(txt);
-                                    }
-                                    menu.append(rename);
-                                }
-                                if (extensionNames.includes('third-party/SillyTavern-WorldInfoBulkEdit')) {
-                                    const bulk = document.createElement('div'); {
-                                        bulk.classList.add('stwid--item');
-                                        bulk.classList.add('stwid--bulkEdit');
-                                        bulk.addEventListener('click', async(evt)=>{
-                                            //TODO cheeky monkey
-                                            const sel = /**@type {HTMLSelectElement}*/(document.querySelector('#world_editor_select'));
-                                            sel.value = /**@type {HTMLOptionElement[]}*/([...sel.children]).find(it=>it.textContent == name).value;
-                                            sel.dispatchEvent(new Event('change', { bubbles:true }));
-                                            await delay(500);
-                                            document.querySelector('.stwibe--trigger').click();
-                                        });
-                                        const i = document.createElement('i'); {
-                                            i.classList.add('stwid--icon');
-                                            i.classList.add('fa-solid', 'fa-fw', 'fa-list-check');
-                                            bulk.append(i);
-                                        }
-                                        const txt = document.createElement('span'); {
-                                            txt.classList.add('stwid--label');
-                                            txt.textContent = 'Bulk Edit';
-                                            bulk.append(txt);
-                                        }
-                                        menu.append(bulk);
-                                    }
-                                }
-                                if (extensionNames.includes('third-party/SillyTavern-WorldInfoExternalEditor')) {
-                                    const editor = document.createElement('div'); {
-                                        editor.classList.add('stwid--item');
-                                        editor.classList.add('stwid--externalEditor');
-                                        editor.addEventListener('click', async(evt)=>{
-                                            fetch('/api/plugins/wiee/editor', {
-                                                method: 'POST',
-                                                headers: getRequestHeaders(),
-                                                body: JSON.stringify({
-                                                    book: name,
-                                                    command: 'code',
-                                                    commandArguments: ['.'],
-                                                }),
-                                            });
-                                        });
-                                        const i = document.createElement('i'); {
-                                            i.classList.add('stwid--icon');
-                                            i.classList.add('fa-solid', 'fa-fw', 'fa-laptop-code');
-                                            editor.append(i);
-                                        }
-                                        const txt = document.createElement('span'); {
-                                            txt.classList.add('stwid--label');
-                                            txt.textContent = 'External Editor';
-                                            editor.append(txt);
-                                        }
-                                        menu.append(editor);
-                                    }
-                                }
-                                const fillTitles = document.createElement('div'); {
-                                    fillTitles.classList.add('stwid--item');
-                                    fillTitles.classList.add('stwid--fillTitles');
-                                    fillTitles.addEventListener('click', async()=>{
-                                        await fillEmptyTitlesWithKeywords(name);
-                                    });
-                                    const i = document.createElement('i'); {
-                                        i.classList.add('stwid--icon');
-                                        i.classList.add('fa-solid', 'fa-fw', 'fa-wand-magic-sparkles');
-                                        fillTitles.append(i);
-                                    }
-                                    const txt = document.createElement('span'); {
-                                        txt.classList.add('stwid--label');
-                                        txt.textContent = 'Fill Empty Titles';
-                                        fillTitles.append(txt);
-                                    }
-                                    menu.append(fillTitles);
-                                }
-                                const bookSort = document.createElement('div'); {
-                                    bookSort.classList.add('stwid--item');
-                                    bookSort.classList.add('stwid--bookSort');
-                                    bookSort.addEventListener('click', (evt)=>evt.stopPropagation());
-                                    const i = document.createElement('i'); {
-                                        i.classList.add('stwid--icon');
-                                        i.classList.add('fa-solid', 'fa-fw', 'fa-list-ol');
-                                        bookSort.append(i);
-                                    }
-                                    const label = document.createElement('span'); {
-                                        label.classList.add('stwid--label');
-                                        label.textContent = 'Book Sort';
-                                        bookSort.append(label);
-                                    }
-                                    const sortSelect = document.createElement('select'); {
-                                        sortSelect.classList.add('text_pole');
-                                        sortSelect.addEventListener('click', (evt)=>evt.stopPropagation());
-                                        const hasCustomSort = Boolean(cache[name].sort);
-                                        const globalLabel = getSortLabel(Settings.instance.sortLogic, Settings.instance.sortDirection) ?? 'Global default';
-                                        const globalOpt = document.createElement('option'); {
-                                            globalOpt.value = 'null';
-                                            globalOpt.textContent = `Use global (${globalLabel})`;
-                                            globalOpt.selected = !hasCustomSort;
-                                            sortSelect.append(globalOpt);
-                                        }
-                                        appendSortOptions(sortSelect, cache[name].sort?.sort, cache[name].sort?.direction);
-                                        sortSelect.addEventListener('change', async()=>{
-                                            const value = sortSelect.value === 'null' ? null : JSON.parse(sortSelect.value);
-                                            if (value) {
-                                                await setBookSortPreference(name, value.sort, value.direction);
-                                            } else {
-                                                await setBookSortPreference(name, null, null);
-                                            }
-                                            blocker.remove();
-                                            menuTrigger.style.anchorName = '';
-                                        });
-                                    }
-                                    bookSort.append(sortSelect);
-                                    menu.append(bookSort);
-                                }
-                                const orderHelper = document.createElement('div'); {
-                                    orderHelper.classList.add('stwid--item');
-                                    orderHelper.classList.add('stwid--orderHelper');
-                                    orderHelper.addEventListener('click', ()=>{
-                                        openOrderHelper(name);
-                                    });
-                                    const i = document.createElement('i'); {
-                                        i.classList.add('stwid--icon');
-                                        i.classList.add('fa-solid', 'fa-fw', 'fa-arrow-down-wide-short');
-                                        orderHelper.append(i);
-                                    }
-                                    const txt = document.createElement('span'); {
-                                        txt.classList.add('stwid--label');
-                                        txt.textContent = 'Order Helper';
-                                        orderHelper.append(txt);
-                                    }
-                                    menu.append(orderHelper);
-                                }
-                                const stloButton = document.createElement('div'); {
-                                    stloButton.id = 'lorebook_ordering_button';
-                                    stloButton.classList.add('stwid--item');
-                                    stloButton.classList.add('stwid--stlo');
-                                    stloButton.dataset.i18n = '[title]stlo.button.configure; [aria-label]stlo.button.configure';
-                                    stloButton.title = 'Configure STLO Priority & Budget';
-                                    stloButton.setAttribute('aria-label', 'Configure STLO Priority & Budget');
-                                    stloButton.tabIndex = 0;
-                                    stloButton.setAttribute('role', 'button');
-                                    stloButton.addEventListener('click', async(evt)=>{
-                                        evt.stopPropagation();
-                                        const escapedName = name.replaceAll('"', '\\"');
-                                        await executeSlashCommand(`/stlo "${escapedName}"`);
-                                        blocker.remove();
-                                        menuTrigger.style.anchorName = '';
-                                    });
-                                    stloButton.addEventListener('keydown', (evt)=>{
-                                        if (evt.key === 'Enter' || evt.key === ' ') {
-                                            evt.preventDefault();
-                                            stloButton.click();
-                                        }
-                                    });
-                                    const i = document.createElement('i'); {
-                                        i.classList.add('stwid--icon');
-                                        i.classList.add('fa-solid', 'fa-fw', 'fa-bars-staggered');
-                                        stloButton.append(i);
-                                    }
-                                    const txt = document.createElement('span'); {
-                                        txt.classList.add('stwid--label');
-                                        txt.textContent = 'Configure STLO';
-                                        stloButton.append(txt);
-                                    }
-                                    menu.append(stloButton);
-                                }
-                                const exp = document.createElement('div'); {
-                                    exp.classList.add('stwid--item');
-                                    exp.classList.add('stwid--export');
-                                    exp.addEventListener('click', async(evt)=>{
-                                        download(JSON.stringify({ entries:cache[name].entries }), name, 'application/json');
-                                    });
-                                    const i = document.createElement('i'); {
-                                        i.classList.add('stwid--icon');
-                                        i.classList.add('fa-solid', 'fa-fw', 'fa-file-export');
-                                        exp.append(i);
-                                    }
-                                    const txt = document.createElement('span'); {
-                                        txt.classList.add('stwid--label');
-                                        txt.textContent = 'Export Book';
-                                        exp.append(txt);
-                                    }
-                                    menu.append(exp);
-                                }
-                                const dup = document.createElement('div'); {
-                                    dup.classList.add('stwid--item');
-                                    dup.classList.add('stwid--duplicate');
-                                    dup.addEventListener('click', async(evt)=>{
-                                        //TODO cheeky monkey
-                                        const sel = /**@type {HTMLSelectElement}*/(document.querySelector('#world_editor_select'));
-                                        sel.value = /**@type {HTMLOptionElement[]}*/([...sel.children]).find(it=>it.textContent == name).value;
-                                        sel.dispatchEvent(new Event('change', { bubbles:true }));
-                                        await delay(500);
-                                        document.querySelector('#world_duplicate').click();
-                                    });
-                                    const i = document.createElement('i'); {
-                                        i.classList.add('stwid--icon');
-                                        i.classList.add('fa-solid', 'fa-fw', 'fa-paste');
-                                        dup.append(i);
-                                    }
-                                    const txt = document.createElement('span'); {
-                                        txt.classList.add('stwid--label');
-                                        txt.textContent = 'Duplicate Book';
-                                        dup.append(txt);
-                                    }
-                                    menu.append(dup);
-                                }
-                                const del = document.createElement('div'); {
-                                    del.classList.add('stwid--item');
-                                    del.classList.add('stwid--delete');
-                                    del.addEventListener('click', async(evt)=>{
-                                        //TODO cheeky monkey
-                                        const sel = /**@type {HTMLSelectElement}*/(document.querySelector('#world_editor_select'));
-                                        sel.value = /**@type {HTMLOptionElement[]}*/([...sel.children]).find(it=>it.textContent == name).value;
-                                        sel.dispatchEvent(new Event('change', { bubbles:true }));
-                                        await delay(500);
-                                        document.querySelector('#world_popup_delete').click();
-                                    });
-                                    const i = document.createElement('i'); {
-                                        i.classList.add('stwid--icon');
-                                        i.classList.add('fa-solid', 'fa-fw', 'fa-trash-can');
-                                        del.append(i);
-                                    }
-                                    const txt = document.createElement('span'); {
-                                        txt.classList.add('stwid--label');
-                                        txt.textContent = 'Delete Book';
-                                        del.append(txt);
-                                    }
-                                    menu.append(del);
-                                }
-                                blocker.append(menu);
-                            }
-                            document.body.append(blocker);
-                        }
-                    });
-                    actions.append(menuTrigger);
-                }
-                collapseToggle = document.createElement('div'); {
-                    cache[name].dom.collapseToggle = collapseToggle;
-                    collapseToggle.classList.add('stwid--action');
-                    collapseToggle.classList.add('stwid--collapseToggle');
-                    collapseToggle.classList.add('fa-solid', 'fa-fw', 'fa-chevron-down');
-                    collapseToggle.addEventListener('click', ()=>{
-                        const isCollapsed = !entryList.classList.contains('stwid--isCollapsed');
-                        setBookCollapsed(name, isCollapsed);
-                    });
-                    actions.append(collapseToggle);
-                }
-                head.append(actions);
-            }
-            book.append(head);
-        }
-        const entryList = document.createElement('div'); {
-            world.dom.entryList = entryList;
-            entryList.classList.add('stwid--entryList');
-            entryList.classList.add('stwid--isCollapsed');
-            const { sort, direction } = getBookSortChoice(name);
-            for (const e of sortEntries(Object.values(world.entries), sort, direction)) {
-                await renderEntry(e, name);
-            }
-            const initialCollapsed = collapseStates[name] ?? entryList.classList.contains('stwid--isCollapsed');
-            setBookCollapsed(name, initialCollapsed);
-            book.append(entryList);
-        }
-        if (before) before.insertAdjacentElement('beforebegin', book);
-        else dom.books.append(book);
-    }
-    return book;
-};
-const loadList = async()=>{
-    dom.books.innerHTML = '';
-    const books = await Promise.all(safeToSorted(world_names, (a,b)=>a.toLowerCase().localeCompare(b.toLowerCase())).map(async(name)=>({ name, data:await loadWorldInfo(name) })));
-    for (const book of books) {
-        await renderBook(book.name, null, book.data);
-    }
-};
-const loadListDebounced = debounceAsync(()=>loadList());
 
 
 const addDrawer = ()=>{
@@ -1667,23 +1051,23 @@ const addDrawer = ()=>{
         // only run when drawer is open
         if (document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2).closest('.stwid--body')) {
             // abort if no active selection
-            if (selectFrom === null || !selectList?.length) return;
+            if (selectionState.selectFrom === null || !selectionState.selectList?.length) return;
             console.log('[STWID]', evt.key);
             switch (evt.key) {
                 case 'Delete': {
                     evt.preventDefault();
                     evt.stopPropagation();
-                    const srcBook = await loadWorldInfo(selectFrom);
-                    for (const srcEntry of selectList) {
+                    const srcBook = await loadWorldInfo(selectionState.selectFrom);
+                    for (const srcEntry of selectionState.selectList) {
                         const uid = srcEntry.uid;
                         const deleted = await deleteWorldInfoEntry(srcBook, uid, { silent:true });
                         if (deleted) {
                             deleteWIOriginalDataValue(srcBook, uid);
                         }
                     }
-                    await saveWorldInfo(selectFrom, srcBook, true);
-                    updateWIChange(selectFrom, srcBook);
-                    selectEnd();
+                    await saveWorldInfo(selectionState.selectFrom, srcBook, true);
+                    updateWIChange(selectionState.selectFrom, srcBook);
+                    listPanelApi.selectEnd();
                     break;
                 }
             }
@@ -1695,8 +1079,6 @@ const addDrawer = ()=>{
         const SPLITTER_STORAGE_KEY = 'stwid--list-width';
         const MIN_LIST_WIDTH = 150;
         const MIN_EDITOR_WIDTH = 300;
-        let searchEntriesInput;
-        let searchInput;
         const body = document.createElement('div'); {
             dom.drawer.body = body;
             body.classList.add('stwid--body');
@@ -1721,7 +1103,7 @@ const addDrawer = ()=>{
                                 if (created) {
                                     await startPromise;
                                     await updateWIChangeFinished.promise;
-                                    setBookCollapsed(finalName, false);
+                                    listPanelApi.setBookCollapsed(finalName, false);
                                     cache[finalName].dom.root.scrollIntoView({ block:'center', inline:'center' });
                                 }
                             }
@@ -1742,20 +1124,7 @@ const addDrawer = ()=>{
                         refresh.classList.add('fa-solid', 'fa-fw', 'fa-arrows-rotate');
                         refresh.title = 'Refresh';
                         refresh.addEventListener('click', async()=>{
-                            dom.drawer.body.classList.add('stwid--isLoading');
-                            dom.editor.innerHTML = '';
-                            currentEditor = null;
-                            for (const [bookName, bookData] of Object.entries(cache)) {
-                                const isCollapsed = bookData?.dom?.entryList?.classList.contains('stwid--isCollapsed');
-                                if (isCollapsed !== undefined) setCollapseState(bookName, isCollapsed);
-                                delete cache[bookName];
-                            }
-                            try {
-                                await loadListDebounced();
-                                searchInput?.dispatchEvent(new Event('input'));
-                            } finally {
-                                dom.drawer.body.classList.remove('stwid--isLoading');
-                            }
+                            await refreshList();
                         });
                         controlsPrimary.append(refresh);
                     }
@@ -1817,13 +1186,12 @@ const addDrawer = ()=>{
                             icon.classList.add('fa-solid', 'fa-fw');
                             collapseAllToggle.append(icon);
                         }
-                        updateCollapseAllToggle();
                         collapseAllToggle.addEventListener('click', ()=>{
-                            const shouldCollapse = hasExpandedBooks();
+                            const shouldCollapse = listPanelApi.hasExpandedBooks();
                             for (const name of Object.keys(cache)) {
-                                setBookCollapsed(name, shouldCollapse);
+                                listPanelApi.setBookCollapsed(name, shouldCollapse);
                             }
-                            updateCollapseAllToggle();
+                            listPanelApi.updateCollapseAllToggle();
                         });
                         controlsPrimary.append(collapseAllToggle);
                     }
@@ -1836,7 +1204,7 @@ const addDrawer = ()=>{
                             Settings.instance.sortLogic = value.sort;
                             Settings.instance.sortDirection = value.direction;
                             for (const name of Object.keys(cache)) {
-                                sortEntriesIfNeeded(name);
+                                listPanelApi.sortEntriesIfNeeded(name);
                             }
                             Settings.instance.save();
                         });
@@ -1867,7 +1235,7 @@ const addDrawer = ()=>{
                             Settings.instance.save();
                             updateToggleState();
                             for (const name of Object.keys(cache)) {
-                                sortEntriesIfNeeded(name);
+                                listPanelApi.sortEntriesIfNeeded(name);
                             }
                         });
                         controlsSecondary.append(bookSortToggle);
@@ -1885,7 +1253,7 @@ const addDrawer = ()=>{
                         clearBookSorts.addEventListener('click', async()=>{
                             clearBookSorts.disabled = true;
                             try {
-                                await clearBookSortPreferences();
+                                await listPanelApi.clearBookSortPreferences();
                             } finally {
                                 clearBookSorts.disabled = false;
                             }
@@ -1895,96 +1263,89 @@ const addDrawer = ()=>{
                     controls.append(controlsPrimary, controlsSecondary);
                     list.append(controls);
                 }
-                const filter = document.createElement('div'); {
-                    filter.classList.add('stwid--filter');
-                    const search = document.createElement('input'); {
-                        search.classList.add('stwid--search');
-                        search.classList.add('text_pole');
-                        search.type = 'search';
-                        search.placeholder = 'Search books';
-                        searchInput = search;
-                        const entryMatchesQuery = (entry, query)=>{
-                            const title = entry.comment ?? '';
-                            const memo = entry.title ?? '';
-                            const keys = Array.isArray(entry.key) ? entry.key.join(', ') : '';
-                            const normalizedQuery = query.toLowerCase();
-                            return [title, memo, keys].some(value=>String(value ?? '').toLowerCase().includes(normalizedQuery));
-                        };
-
-                        search.addEventListener('input', ()=>{
-                            const query = search.value.toLowerCase();
-                            for (const b of Object.keys(cache)) {
-                                if (query.length) {
-                                    const bookMatch = b.toLowerCase().includes(query);
-                                    const entryMatch = searchEntriesInput.checked && Object.values(cache[b].entries).find(e=>entryMatchesQuery(e, query));
-                                    if (bookMatch || entryMatch) {
-                                        cache[b].dom.root.classList.remove('stwid--filter-query');
-                                        if (searchEntriesInput.checked) {
-                                            for (const e of Object.values(cache[b].entries)) {
-                                                if (bookMatch || entryMatchesQuery(e, query)) {
-                                                    cache[b].dom.entry[e.uid].root.classList.remove('stwid--filter-query');
-                                                } else {
-                                                    cache[b].dom.entry[e.uid].root.classList.add('stwid--filter-query');
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        cache[b].dom.root.classList.add('stwid--filter-query');
-                                    }
-                                } else {
-                                    cache[b].dom.root.classList.remove('stwid--filter-query');
-                                    for (const e of Object.values(cache[b].entries)) {
-                                        cache[b].dom.entry[e.uid].root.classList.remove('stwid--filter-query');
-                                    }
-                                }
-                            }
-                        });
-                        filter.append(search);
-                    }
-                    const searchEntries = document.createElement('label'); {
-                        searchEntries.classList.add('stwid--searchEntries');
-                        searchEntries.title = 'Search through entries as well (Title/Memo/Keys)';
-                        const inp = document.createElement('input'); {
-                            searchEntriesInput = inp;
-                            inp.type = 'checkbox';
-                            inp.addEventListener('click', ()=>{
-                                search.dispatchEvent(new Event('input'));
-                            });
-                            searchEntries.append(inp);
-                        }
-                        searchEntries.append('Entries');
-                        filter.append(searchEntries);
-                    }
-                    const filterActive = document.createElement('label'); {
-                        filterActive.classList.add('stwid--filterActive');
-                        filterActive.title = 'Only show globally active books';
-                        const inp = document.createElement('input'); {
-                            inp.type = 'checkbox';
-                            inp.addEventListener('click', ()=>{
-                                for (const b of Object.keys(cache)) {
-                                    if (inp.checked) {
-                                        if (selected_world_info.includes(b)) {
-                                            cache[b].dom.root.classList.remove('stwid--filter-active');
-                                        } else {
-                                            cache[b].dom.root.classList.add('stwid--filter-active');
-                                        }
-                                    } else {
-                                        cache[b].dom.root.classList.remove('stwid--filter-active');
-                                    }
-                                }
-                            });
-                            filterActive.append(inp);
-                        }
-                        filterActive.append('Active');
-                        filter.append(filterActive);
-                    }
-                    list.append(filter);
-                }
-                const books = document.createElement('div'); {
-                    dom.books = books;
-                    books.classList.add('stwid--books');
-                    list.append(books);
-                }
+                listPanelApi = initListPanel({
+                    Settings,
+                    METADATA_NAMESPACE,
+                    METADATA_SORT_KEY,
+                    appendSortOptions,
+                    buildSavePayload,
+                    cache,
+                    debounce,
+                    debounceAsync,
+                    deleteWIOriginalDataValue,
+                    deleteWorldInfoEntry,
+                    delay,
+                    dom,
+                    download,
+                    executeSlashCommand,
+                    extensionNames,
+                    fillEmptyTitlesWithKeywords,
+                    getRequestHeaders,
+                    getSortFromMetadata,
+                    getSortLabel,
+                    list,
+                    loadWorldInfo,
+                    onWorldInfoChange,
+                    openOrderHelper,
+                    renderEntry,
+                    resetEditor: ()=>{
+                        dom.editor.innerHTML = '';
+                        currentEditor = null;
+                    },
+                    safeToSorted,
+                    saveWorldInfo,
+                    selected_world_info,
+                    sortEntries,
+                    updateWIChange,
+                    world_names,
+                    createNewWorldInfo,
+                    createWorldInfoEntry,
+                    getFreeWorldName,
+                });
+                selectionState = listPanelApi.getSelectionState();
+                setWorldEntryContext({
+                    buildSavePayload,
+                    cache,
+                    dom,
+                    getWorldEntry,
+                    renderTemplateAsync,
+                    saveWorldInfo,
+                    selectAdd: listPanelApi.selectAdd,
+                    selectEnd: listPanelApi.selectEnd,
+                    selectRemove: listPanelApi.selectRemove,
+                    uuidv4,
+                    get currentEditor() {
+                        return currentEditor;
+                    },
+                    set currentEditor(value) {
+                        currentEditor = value;
+                    },
+                    get selectFrom() {
+                        return selectionState.selectFrom;
+                    },
+                    set selectFrom(value) {
+                        selectionState.selectFrom = value;
+                    },
+                    get selectLast() {
+                        return selectionState.selectLast;
+                    },
+                    set selectLast(value) {
+                        selectionState.selectLast = value;
+                    },
+                    get selectList() {
+                        return selectionState.selectList;
+                    },
+                    set selectList(value) {
+                        selectionState.selectList = value;
+                    },
+                    get selectToast() {
+                        return selectionState.selectToast;
+                    },
+                    set selectToast(value) {
+                        selectionState.selectToast = value;
+                    },
+                });
+                listPanelApi.updateCollapseAllToggle();
                 body.append(list);
             }
             const splitter = document.createElement('div'); {
@@ -2049,7 +1410,7 @@ const addDrawer = ()=>{
     moDrawer.observe(drawerContent, { attributes:true, attributeFilter:['style'] });
 };
 addDrawer();
-loadListDebounced().then(()=>dom.drawer.body.classList.remove('stwid--isLoading'));
+refreshList();
 
 
 let isDiscord;
