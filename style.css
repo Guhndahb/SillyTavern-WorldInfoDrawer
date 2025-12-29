@@ -344,7 +344,8 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 .stwid--blocker .stwid--menu .stwid--item {
   min-height: var(--stwid-menu-item-height);
   height: var(--stwid-menu-item-height);
-  opacity: 0.5;
+  opacity: 1;
+  color: var(--SmartThemeBodyColor);
   background-color: rgba(255, 255, 255, 0);
   cursor: pointer;
   transition: 200ms;
