@@ -21,8 +21,23 @@ export const initOrderHelper = ({
 }) => {
     const ORDER_HELPER_SORT_STORAGE_KEY = 'stwid--order-helper-sort';
     const ORDER_HELPER_HIDE_KEYS_STORAGE_KEY = 'stwid--order-helper-hide-keys';
+    const ORDER_HELPER_COLUMNS_STORAGE_KEY = 'stwid--order-helper-columns';
+    const ORDER_HELPER_DEFAULT_COLUMNS = {
+        strategy: true,
+        position: true,
+        depth: true,
+        outlet: true,
+        order: true,
+        trigger: true,
+    };
     const orderHelperState = (()=>{
-        const state = { sort:SORT.TITLE, direction:SORT_DIRECTION.ASCENDING, book:null, hideKeys:false };
+        const state = {
+            sort:SORT.TITLE,
+            direction:SORT_DIRECTION.ASCENDING,
+            book:null,
+            hideKeys:false,
+            columns: { ...ORDER_HELPER_DEFAULT_COLUMNS },
+        };
         try {
             const stored = JSON.parse(localStorage.getItem(ORDER_HELPER_SORT_STORAGE_KEY));
             if (Object.values(SORT).includes(stored?.sort) && Object.values(SORT_DIRECTION).includes(stored?.direction)) {
@@ -32,6 +47,18 @@ export const initOrderHelper = ({
         } catch { /* empty */ }
         try {
             state.hideKeys = localStorage.getItem(ORDER_HELPER_HIDE_KEYS_STORAGE_KEY) === 'true';
+        } catch { /* empty */ }
+        try {
+            const storedColumns = JSON.parse(localStorage.getItem(ORDER_HELPER_COLUMNS_STORAGE_KEY));
+            if (storedColumns && typeof storedColumns === 'object') {
+                for (const [key, value] of Object.entries(ORDER_HELPER_DEFAULT_COLUMNS)) {
+                    if (typeof storedColumns[key] === 'boolean') {
+                        state.columns[key] = storedColumns[key];
+                    } else {
+                        state.columns[key] = value;
+                    }
+                }
+            }
         } catch { /* empty */ }
         return state;
     })();
@@ -105,6 +132,13 @@ export const initOrderHelper = ({
         updateOrderHelperPreview(entries);
     };
 
+    const applyOrderHelperColumnVisibility = (root)=>{
+        if (!root) return;
+        for (const [key, visible] of Object.entries(orderHelperState.columns)) {
+            root.classList.toggle(`stwid--hide-col-${key}`, !visible);
+        }
+    };
+
     const focusWorldEntry = (book, uid)=>{
         const entryDom = cache?.[book]?.dom?.entry?.[uid]?.root;
         if (!entryDom) return;
@@ -127,6 +161,7 @@ export const initOrderHelper = ({
         const body = document.createElement('div'); {
             body.classList.add('stwid--orderHelper');
             body.classList.toggle('stwid--hideKeys', orderHelperState.hideKeys);
+            applyOrderHelperColumnVisibility(body);
             const actions = document.createElement('div'); {
                 actions.classList.add('stwid--actions');
                 const selectAll = document.createElement('div'); {
@@ -159,6 +194,91 @@ export const initOrderHelper = ({
                         applyKeyToggleStyle();
                     });
                     actions.append(keyToggle);
+                }
+                const columnVisibilityWrap = document.createElement('div'); {
+                    columnVisibilityWrap.classList.add('stwid--columnVisibility');
+                    const labelWrap = document.createElement('div'); {
+                        labelWrap.classList.add('stwid--columnVisibilityLabel');
+                        const labelText = document.createElement('div'); {
+                            labelText.classList.add('stwid--columnVisibilityText');
+                            labelText.innerHTML = 'Column<br>Visibility:';
+                            labelWrap.append(labelText);
+                        }
+                        const icon = document.createElement('i'); {
+                            icon.classList.add('fa-solid', 'fa-fw', 'fa-columns');
+                            labelWrap.append(icon);
+                        }
+                        columnVisibilityWrap.append(labelWrap);
+                    }
+                    const menuWrap = document.createElement('div'); {
+                        menuWrap.classList.add('stwid--columnMenuWrap');
+                        const menuButton = document.createElement('div'); {
+                            menuButton.classList.add('menu_button', 'stwid--columnMenuButton');
+                            menuButton.textContent = 'Select';
+                            const caret = document.createElement('i'); {
+                                caret.classList.add('fa-solid', 'fa-fw', 'fa-caret-down');
+                                menuButton.append(caret);
+                            }
+                            menuWrap.append(menuButton);
+                        }
+                        const menu = document.createElement('div'); {
+                            menu.classList.add('stwid--columnMenu');
+                            const closeMenu = ()=>{
+                                if (!menu.classList.contains('stwid--active')) return;
+                                menu.classList.remove('stwid--active');
+                                document.removeEventListener('click', handleOutsideClick);
+                            };
+                            const openMenu = ()=>{
+                                if (menu.classList.contains('stwid--active')) return;
+                                menu.classList.add('stwid--active');
+                                document.addEventListener('click', handleOutsideClick);
+                            };
+                            const handleOutsideClick = (event)=>{
+                                if (menuWrap.contains(event.target)) return;
+                                closeMenu();
+                            };
+                            const columns = [
+                                { key:'strategy', label:'Strategy' },
+                                { key:'position', label:'Position' },
+                                { key:'depth', label:'Depth' },
+                                { key:'outlet', label:'Outlet' },
+                                { key:'order', label:'Order' },
+                                { key:'trigger', label:'Trigger %' },
+                            ];
+                            for (const column of columns) {
+                                const option = document.createElement('label'); {
+                                    option.classList.add('stwid--columnOption');
+                                    const input = document.createElement('input'); {
+                                        input.type = 'checkbox';
+                                        input.checked = Boolean(orderHelperState.columns[column.key]);
+                                        input.addEventListener('change', ()=>{
+                                            orderHelperState.columns[column.key] = input.checked;
+                                            localStorage.setItem(
+                                                ORDER_HELPER_COLUMNS_STORAGE_KEY,
+                                                JSON.stringify(orderHelperState.columns),
+                                            );
+                                            applyOrderHelperColumnVisibility(body);
+                                        });
+                                        option.append(input);
+                                    }
+                                    option.append(column.label);
+                                    menu.append(option);
+                                }
+                            }
+                            menu.addEventListener('click', (event)=>event.stopPropagation());
+                            menuButton.addEventListener('click', (event)=>{
+                                event.stopPropagation();
+                                if (menu.classList.contains('stwid--active')) {
+                                    closeMenu();
+                                } else {
+                                    openMenu();
+                                }
+                            });
+                            menuWrap.append(menu);
+                        }
+                        columnVisibilityWrap.append(menuWrap);
+                    }
+                    actions.append(columnVisibilityWrap);
                 }
                 const addDivider = ()=>{
                     const divider = document.createElement('div');
@@ -424,9 +544,24 @@ export const initOrderHelper = ({
                     tbl.classList.add('stwid--orderTable');
                     const thead = document.createElement('thead'); {
                         const tr = document.createElement('tr'); {
-                            for (const col of ['', '', '', 'Entry', 'Strategy', 'Position', 'Depth', 'Outlet', 'Order', 'Trigger %']) {
+                            const columns = [
+                                { label:'', key:null },
+                                { label:'', key:null },
+                                { label:'', key:null },
+                                { label:'Entry', key:null },
+                                { label:'Strategy', key:'strategy' },
+                                { label:'Position', key:'position' },
+                                { label:'Depth', key:'depth' },
+                                { label:'Outlet', key:'outlet' },
+                                { label:'Order', key:'order' },
+                                { label:'Trigger %', key:'trigger' },
+                            ];
+                            for (const col of columns) {
                                 const th = document.createElement('th'); {
-                                    th.textContent = col;
+                                    th.textContent = col.label;
+                                    if (col.key) {
+                                        th.setAttribute('data-col', col.key);
+                                    }
                                     tr.append(th);
                                 }
                             }
@@ -527,6 +662,7 @@ export const initOrderHelper = ({
                                     tr.append(entry);
                                 }
                                 const strategy = document.createElement('td'); {
+                                    strategy.setAttribute('data-col', 'strategy');
                                     const strat = /**@type {HTMLSelectElement}*/(document.querySelector('#entry_edit_template [name="entryStateSelector"]').cloneNode(true)); {
                                         strat.classList.add('stwid--strategy');
                                         strat.value = entryState(e.data);
@@ -559,6 +695,7 @@ export const initOrderHelper = ({
                                 let updateOutlet;
                                 const pos = /**@type {HTMLSelectElement}*/(document.querySelector('#entry_edit_template [name="position"]').cloneNode(true));
                                 const position = document.createElement('td'); {
+                                    position.setAttribute('data-col', 'position');
                                     cache[e.book].dom.entry[e.data.uid].position = pos;
                                     pos.classList.add('stwid--position');
                                     pos.value = e.data.position;
@@ -574,6 +711,7 @@ export const initOrderHelper = ({
                                     tr.append(position);
                                 }
                                 const depth = document.createElement('td'); {
+                                    depth.setAttribute('data-col', 'depth');
                                     const inp = document.createElement('input'); {
                                         inp.classList.add('stwid--input');
                                         inp.classList.add('text_pole');
@@ -592,6 +730,7 @@ export const initOrderHelper = ({
                                     tr.append(depth);
                                 }
                                 const outlet = document.createElement('td'); {
+                                    outlet.setAttribute('data-col', 'outlet');
                                     const wrap = document.createElement('div'); {
                                         wrap.classList.add('stwid--colwrap');
                                         wrap.classList.add('stwid--outlet');
@@ -623,6 +762,7 @@ export const initOrderHelper = ({
                                     tr.append(outlet);
                                 }
                                 const order = document.createElement('td'); {
+                                    order.setAttribute('data-col', 'order');
                                     const inp = document.createElement('input'); {
                                         inp.classList.add('stwid--input');
                                         inp.classList.add('text_pole');
@@ -641,6 +781,7 @@ export const initOrderHelper = ({
                                     tr.append(order);
                                 }
                                 const probability = document.createElement('td'); {
+                                    probability.setAttribute('data-col', 'trigger');
                                     const inp = document.createElement('input'); {
                                         inp.classList.add('stwid--input');
                                         inp.classList.add('text_pole');

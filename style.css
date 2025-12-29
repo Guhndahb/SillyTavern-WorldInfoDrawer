@@ -391,6 +391,24 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 .stwid--orderHelper.stwid--hideKeys .stwid--key {
   display: none;
 }
+.stwid--orderHelper.stwid--hide-col-strategy [data-col="strategy"] {
+  display: none;
+}
+.stwid--orderHelper.stwid--hide-col-position [data-col="position"] {
+  display: none;
+}
+.stwid--orderHelper.stwid--hide-col-depth [data-col="depth"] {
+  display: none;
+}
+.stwid--orderHelper.stwid--hide-col-outlet [data-col="outlet"] {
+  display: none;
+}
+.stwid--orderHelper.stwid--hide-col-order [data-col="order"] {
+  display: none;
+}
+.stwid--orderHelper.stwid--hide-col-trigger [data-col="trigger"] {
+  display: none;
+}
 .stwid--orderHelper .stwid--actions {
   flex: 0 0 auto;
   display: flex;
@@ -416,6 +434,54 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 .stwid--orderHelper .stwid--actions .stwid--inputWrap .stwid--input {
   width: 33%;
   min-width: 4em;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--SmartThemeEmColor);
+  font-size: smaller;
+  position: relative;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnVisibilityLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnVisibilityText {
+  line-height: 1.1;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnMenuWrap {
+  position: relative;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnMenuButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnMenu {
+  position: absolute;
+  top: calc(100% + 0.35em);
+  left: 0;
+  background-color: var(--SmartThemeBlurTintColor);
+  border: 1px solid var(--SmartThemeBorderColor);
+  border-radius: 6px;
+  padding: 0.5em;
+  min-width: 10em;
+  display: none;
+  flex-direction: column;
+  gap: 0.35em;
+  z-index: 3;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnMenu.stwid--active {
+  display: flex;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnOption {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.9em;
+  cursor: pointer;
 }
 .stwid--orderHelper .stwid--actions .stwid--actionsRight {
   margin-left: auto;
