@@ -322,7 +322,7 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
     z-index: 30000;
 }
 .stwid--blocker .stwid--menu {
-    --stwid-menu-item-height: 2.35em;
+    --stwid-menu-item-height: 2.05em;
 
   position: fixed;
   position-anchor: --stwid--ctxAnchor;
@@ -333,32 +333,36 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   z-index: 30000;
   overflow-x: clip;
   overflow-y: auto;
-  border-radius: 10px;
+  border: 1px solid var(--SmartThemeBorderColor);
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
-  background-color: rgb(32 33 36 / 90%);
+  background-color: color-mix(in srgb, var(--SmartThemeBlurTintColor) 95%, black 10%);
+  font-size: 0.9em;
+  padding: 0.5em;
 }
 .stwid--blocker .stwid--menu .stwid--item {
   min-height: var(--stwid-menu-item-height);
   height: var(--stwid-menu-item-height);
-  opacity: 0.5;
+  opacity: 1;
+  color: var(--SmartThemeBodyColor);
   background-color: rgba(255, 255, 255, 0);
   cursor: pointer;
   transition: 200ms;
   display: flex;
   flex-direction: row;
-  gap: 0.5em;
+  gap: 0.35em;
   align-items: center;
   box-sizing: border-box;
-  padding: 5px;
+  padding: 3px;
 }
 .stwid--blocker .stwid--menu .stwid--item:hover {
   opacity: 1;
-  background-color: rgba(255, 255, 255, 0.0625);
+  background-color: color-mix(in srgb, var(--customThemeColor) 85%, black 15%);
 }
 .stwid--blocker .stwid--menu .stwid--item .stwid--icon {
   flex: 0 0 auto;
-  width: 1.25em;
+  width: 1.05em;
   text-align: center;
 }
 .stwid--blocker .stwid--menu .stwid--item .stwid--label {
@@ -369,7 +373,7 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.5em;
+  gap: 0.35em;
 }
 .stwid--blocker .stwid--menu .stwid--item.stwid--bookSort {
     opacity: 1;
@@ -382,6 +386,7 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
     min-height: var(--stwid-menu-item-height);
     height: 100%;
     margin: 0;
+    font-size: 1em;
 }
 .stwid--orderHelper {
     display: flex;
@@ -391,13 +396,32 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 .stwid--orderHelper.stwid--hideKeys .stwid--key {
   display: none;
 }
+.stwid--orderHelper.stwid--hide-col-strategy [data-col="strategy"] {
+  display: none;
+}
+.stwid--orderHelper.stwid--hide-col-position [data-col="position"] {
+  display: none;
+}
+.stwid--orderHelper.stwid--hide-col-depth [data-col="depth"] {
+  display: none;
+}
+.stwid--orderHelper.stwid--hide-col-outlet [data-col="outlet"] {
+  display: none;
+}
+.stwid--orderHelper.stwid--hide-col-order [data-col="order"] {
+  display: none;
+}
+.stwid--orderHelper.stwid--hide-col-trigger [data-col="trigger"] {
+  display: none;
+}
 .stwid--orderHelper .stwid--actions {
   flex: 0 0 auto;
   display: flex;
-  gap: 1.5em;
+  gap: 1.25em;
   justify-content: flex-start;
   align-items: center;
   background-color: var(--SmartThemeBlurTintColor);
+  padding: 0 0.5em;
 }
 .stwid--orderHelper .stwid--actions .stwid--actionsDivider {
   align-self: stretch;
@@ -415,6 +439,67 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 .stwid--orderHelper .stwid--actions .stwid--inputWrap .stwid--input {
   width: 33%;
   min-width: 4em;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--SmartThemeEmColor);
+  font-size: smaller;
+  position: relative;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnVisibilityLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnVisibilityText {
+  line-height: 1.1;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnMenuWrap {
+  position: relative;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnMenuButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnMenu {
+  position: absolute;
+  top: calc(100% + 0.35em);
+  left: 0;
+  background-color: color-mix(in srgb, var(--SmartThemeBlurTintColor) 90%, black 15%);
+  border: 1px solid var(--SmartThemeBorderColor);
+  border-radius: 6px;
+  padding: 0.7em;
+  min-width: 10em;
+  display: none;
+  flex-direction: column;
+  gap: 0.6em;
+  z-index: 3;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnMenu.stwid--active {
+  display: flex;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnOption {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 1em;
+  cursor: pointer;
+}
+.stwid--orderHelper .stwid--actions .stwid--columnVisibility .stwid--columnOption input[type="checkbox"] {
+  width: 0.85em;
+  height: 0.85em;
+}
+.stwid--orderHelper .stwid--actions .stwid--actionsRight {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+}
+.stwid--orderHelper .stwid--actions .stwid--actionsRight .stwid--actionsDivider {
+  margin-right: 0.5em;
 }
 .stwid--orderHelper .stwid--filter {
   background-color: var(--SmartThemeBlurTintColor);
@@ -527,21 +612,55 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 .stwid--orderTable tr th,
 .stwid--orderTable tr td {
   text-align: left;
-  padding: 0 0.5em;
+  padding: 0 0.7em;
   width: 0;
 }
-.stwid--orderTable tr th:nth-child(5),
-.stwid--orderTable tr td:nth-child(5),
-.stwid--orderTable tr th:nth-child(6),
-.stwid--orderTable tr td:nth-child(6),
-.stwid--orderTable tr th:nth-child(7),
-.stwid--orderTable tr td:nth-child(7),
-.stwid--orderTable tr th:nth-child(8),
-.stwid--orderTable tr td:nth-child(8),
-.stwid--orderTable tr th:nth-child(9),
-.stwid--orderTable tr td:nth-child(9),
-.stwid--orderTable tr th:nth-child(10),
-.stwid--orderTable tr td:nth-child(10) {
+.stwid--orderHelper .stwid--orderTable tr th[data-col="select"],
+.stwid--orderHelper .stwid--orderTable tr td[data-col="select"] {
+  min-width: 1em;
+  text-align: center;
+}
+.stwid--orderHelper .stwid--orderTable tr th[data-col="drag"],
+.stwid--orderHelper .stwid--orderTable tr td[data-col="drag"] {
+  min-width: 1em;
+  text-align: center;
+}
+.stwid--orderHelper .stwid--orderTable tr th[data-col="enabled"],
+.stwid--orderHelper .stwid--orderTable tr td[data-col="enabled"] {
+  min-width: 1em;
+  text-align: center;
+}
+.stwid--orderHelper .stwid--orderTable tr th[data-col="entry"],
+.stwid--orderHelper .stwid--orderTable tr td[data-col="entry"] {
+  min-width: 10em;
+}
+.stwid--orderHelper .stwid--orderTable tr th[data-col="strategy"],
+.stwid--orderHelper .stwid--orderTable tr td[data-col="strategy"] {
+  min-width: 5em;
+  text-align: center;
+}
+.stwid--orderHelper .stwid--orderTable tr th[data-col="position"],
+.stwid--orderHelper .stwid--orderTable tr td[data-col="position"] {
+  min-width: 7em;
+  text-align: center;
+}
+.stwid--orderHelper .stwid--orderTable tr th[data-col="depth"],
+.stwid--orderHelper .stwid--orderTable tr td[data-col="depth"] {
+  min-width: 5em;
+  text-align: center;
+}
+.stwid--orderHelper .stwid--orderTable tr th[data-col="outlet"],
+.stwid--orderHelper .stwid--orderTable tr td[data-col="outlet"] {
+  min-width: 8em;
+  text-align: center;
+}
+.stwid--orderHelper .stwid--orderTable tr th[data-col="order"],
+.stwid--orderHelper .stwid--orderTable tr td[data-col="order"] {
+  min-width: 5em;
+}
+.stwid--orderHelper .stwid--orderTable tr th[data-col="trigger"],
+.stwid--orderHelper .stwid--orderTable tr td[data-col="trigger"] {
+  min-width: 5em;
   text-align: center;
 }
 .stwid--orderTable tr td {
@@ -583,11 +702,15 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 }
 .stwid--orderTable tr td:has(.stwid--entry) .stwid--book {
   color: var(--SmartThemeEmColor);
-  font-size: 0.6em;
+  font-size: 0.8em;
   line-height: 1;
 }
 .stwid--orderTable tr td:has(.stwid--entry) .stwid--commentLink {
   color: inherit;
+}
+.stwid--orderTable tr td:has(.stwid--entry) a.stwid--comment.stwid--commentLink {
+  font-size: 1.1em;
+  font-weight: 500;
 }
 .stwid--orderTable tr td:has(.stwid--entry) .stwid--key {
   color: var(--SmartThemeEmColor);
@@ -623,3 +746,4 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   padding-left: 0.5em;
   font-size: small;
 }
+
