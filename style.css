@@ -612,35 +612,42 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="select"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="select"] {
-  min-width: 2.5em;
+  min-width: 1em;
+  text-align: center;
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="drag"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="drag"] {
-  min-width: 2em;
+  min-width: 1em;
+  text-align: center;
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="enabled"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="enabled"] {
-  min-width: 2.5em;
+  min-width: 1em;
+  text-align: center;
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="entry"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="entry"] {
-  min-width: 16em;
+  min-width: 10em;
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="strategy"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="strategy"] {
-  min-width: 7em;
+  min-width: 5em;
+  text-align: center;
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="position"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="position"] {
-  min-width: 6em;
+  min-width: 7em;
+  text-align: center;
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="depth"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="depth"] {
   min-width: 5em;
+  text-align: center;
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="outlet"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="outlet"] {
   min-width: 8em;
+  text-align: center;
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="order"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="order"] {
@@ -648,7 +655,8 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="trigger"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="trigger"] {
-  min-width: 7em;
+  min-width: 5em;
+  text-align: center;
 }
 .stwid--orderTable tr th[data-col="strategy"],
 .stwid--orderTable tr td[data-col="strategy"],

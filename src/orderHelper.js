@@ -541,9 +541,9 @@ export const initOrderHelper = ({
                     const thead = document.createElement('thead'); {
                         const tr = document.createElement('tr'); {
                             const columns = [
-                                { label:'Select', key:'select' },
-                                { label:'Drag', key:'drag' },
-                                { label:'Enabled', key:'enabled' },
+                                { label:'', key:'select' },
+                                { label:'', key:'drag' },
+                                { label:'', key:'enabled' },
                                 { label:'Entry', key:'entry' },
                                 { label:'Strategy', key:'strategy' },
                                 { label:'Position', key:'position' },
