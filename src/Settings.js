@@ -2,6 +2,8 @@ import { saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
 import { SORT, SORT_DIRECTION } from './constants.js';
 
+export { SORT, SORT_DIRECTION } from './constants.js';
+
 export class Settings {
     /**@type {Settings} */
     static #instance;
