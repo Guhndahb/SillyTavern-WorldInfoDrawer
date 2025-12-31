@@ -73,6 +73,8 @@ const dom = {
         },
         /**@type {HTMLElement} */
         selectAll: undefined,
+        /**@type {HTMLSelectElement} */
+        sortSelect: undefined,
         /**@type {{[book:string]:{[uid:string]:HTMLElement}}} */
         entries: {},
         /**@type {HTMLElement} */
