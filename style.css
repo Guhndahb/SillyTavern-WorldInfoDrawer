@@ -710,6 +710,9 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   width: 0.85em;
   height: 0.85em;
 }
+.stwid--orderHelper .stwid--recursionOptions br {
+  display: none;
+}
 .stwid--orderTable tr td {
   color: rgb(from var(--SmartThemeBodyColor) r g b / 0.75);
   font-size: small;
@@ -775,7 +778,8 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
   width: 100%;
   min-width: 7em;
 }
-.stwid--orderHelper .stwid--orderInputTight {
+.stwid--orderHelper .stwid--orderInputTight,
+.stwid--orderHelper .stwid--orderTable input:is([name="depth"], [name="order"], [name="sticky"], [name="cooldown"], [name="delay"], [name="automationId"], [name="selective_probability"]) {
   min-height: 5px;
   padding-left: 5px;
   padding-right: 5px;
