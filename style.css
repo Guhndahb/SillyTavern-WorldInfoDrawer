@@ -678,6 +678,7 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 .stwid--orderHelper .stwid--orderTable tr th[data-col="order"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="order"] {
   min-width: 5em;
+ text-align: center;
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="trigger"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="trigger"] {
@@ -687,10 +688,11 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 .stwid--orderHelper .stwid--orderTable tr th[data-col="recursion"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="recursion"] {
   min-width: 12em;
+  text-align: center;
 }
 .stwid--orderHelper .stwid--orderTable tr th[data-col="budget"],
 .stwid--orderHelper .stwid--orderTable tr td[data-col="budget"] {
-  min-width: 10em;
+  min-width: 7em;
   text-align: center;
 }
 .stwid--orderHelper .stwid--recursionOptions {
@@ -772,20 +774,19 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 .stwid--orderTable tr td .stwid--outlet input[name="outletName"] {
   width: 100%;
   min-width: 7em;
-  font-size: 0.85em;
 }
 .stwid--orderHelper .stwid--orderInputTight {
   min-height: 5px;
   padding-left: 5px;
   padding-right: 5px;
+  font-size: 0.95em;
 }
 .stwid--orderTable tr td .stwid--position {
   font-size: 0.9em;
 }
 .stwid--orderTable tr td input[name="depth"], .stwid--orderTable tr td input[name="order"], .stwid--orderTable tr td input[name="selective_probability"] {
-  width: 33%;
   min-width: 4em;
-  font-size: 0.9em;
+  font-size: 0.95em;
 }
 .stwid--orderTable tr td .stwid--enabled {
   color: var(--SmartThemeQuoteColor);
