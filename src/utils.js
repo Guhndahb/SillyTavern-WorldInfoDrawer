@@ -43,7 +43,7 @@ const safeToSorted = (array, comparator)=>typeof array.toSorted === 'function'
     ? array.toSorted(comparator)
     : array.slice().sort(comparator);
 
-const getSortLabel = (sort, direction)=>SORT_OPTIONS.find(([label, s, d])=>s === sort && d === direction)?.[0];
+const getSortLabel = (sort, direction)=>SORT_OPTIONS.find(([, s, d])=>s === sort && d === direction)?.[0];
 
 const appendSortOptions = (select, currentSort, currentDirection)=>{
     for (const [label, sort, direction] of SORT_OPTIONS) {
