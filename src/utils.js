@@ -6,6 +6,7 @@ import { SORT, SORT_DIRECTION } from './constants.js';
  * @type {[string, SORT, SORT_DIRECTION][]}
  */
 const SORT_OPTIONS = [
+    ['Custom', SORT.CUSTOM, SORT_DIRECTION.ASCENDING],
     ['Title A-Z', SORT.TITLE, SORT_DIRECTION.ASCENDING],
     ['Title Z-A', SORT.TITLE, SORT_DIRECTION.DESCENDING],
     ['Position ↗', SORT.POSITION, SORT_DIRECTION.ASCENDING],

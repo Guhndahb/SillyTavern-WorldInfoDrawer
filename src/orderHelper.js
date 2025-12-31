@@ -63,6 +63,56 @@ export const initOrderHelper = ({
         return state;
     })();
 
+    const getEntryDisplayIndex = (entry)=>{
+        const displayIndex = Number(entry?.extensions?.display_index);
+        return Number.isFinite(displayIndex) ? displayIndex : null;
+    };
+
+    const compareEntryUid = (a, b)=>{
+        const auid = Number(a.uid);
+        const buid = Number(b.uid);
+        if (Number.isFinite(auid) && Number.isFinite(buid) && auid !== buid) return auid - buid;
+        return String(a.uid).localeCompare(String(b.uid));
+    };
+
+    const getOrderHelperSourceEntries = (book = orderHelperState.book)=>Object.entries(cache)
+        .filter(([name])=>getSelectedWorldInfo().includes(name))
+        .map(([name,data])=>Object.values(data.entries).map(it=>({ book:name, data:it })))
+        .flat()
+        .filter((entry)=>!book || entry.book === book);
+
+    const ensureCustomDisplayIndex = (book = orderHelperState.book)=>{
+        const source = getOrderHelperSourceEntries(book);
+        const entriesByBook = new Map();
+        for (const entry of source) {
+            if (!entriesByBook.has(entry.book)) {
+                entriesByBook.set(entry.book, []);
+            }
+            entriesByBook.get(entry.book).push(entry.data);
+        }
+        const updatedBooks = new Set();
+        for (const [bookName, entries] of entriesByBook.entries()) {
+            let maxIndex = -1;
+            for (const entry of entries) {
+                const displayIndex = getEntryDisplayIndex(entry);
+                if (Number.isFinite(displayIndex)) {
+                    maxIndex = Math.max(maxIndex, displayIndex);
+                }
+            }
+            let nextIndex = maxIndex + 1;
+            const missing = entries
+                .filter((entry)=>!Number.isFinite(getEntryDisplayIndex(entry)))
+                .sort(compareEntryUid);
+            for (const entry of missing) {
+                entry.extensions ??= {};
+                entry.extensions.display_index = nextIndex;
+                nextIndex += 1;
+                updatedBooks.add(bookName);
+            }
+        }
+        return [...updatedBooks];
+    };
+
     const getOrderHelperEntries = (book = orderHelperState.book, includeDom = false)=>{
         const source = includeDom && dom.order.entries && dom.order.tbody
             ? Object.entries(dom.order.entries)
@@ -72,10 +122,7 @@ export const initOrderHelper = ({
                     data: cache[entryBook].entries[tr.getAttribute('data-uid')],
                 })))
                 .flat()
-            : Object.entries(cache)
-                .filter(([name])=>getSelectedWorldInfo().includes(name))
-                .map(([name,data])=>Object.values(data.entries).map(it=>({ book:name, data:it })))
-                .flat();
+            : getOrderHelperSourceEntries(book);
         return sortEntries(source, orderHelperState.sort, orderHelperState.direction)
             .filter((entry)=>!book || entry.book === book);
     };
@@ -132,6 +179,16 @@ export const initOrderHelper = ({
         updateOrderHelperPreview(entries);
     };
 
+    const setOrderHelperSort = (sort, direction)=>{
+        orderHelperState.sort = sort;
+        orderHelperState.direction = direction;
+        const value = JSON.stringify({ sort, direction });
+        localStorage.setItem(ORDER_HELPER_SORT_STORAGE_KEY, value);
+        if (dom.order.sortSelect) {
+            dom.order.sortSelect.value = value;
+        }
+    };
+
     const applyOrderHelperColumnVisibility = (root)=>{
         if (!root) return;
         for (const [key, visible] of Object.entries(orderHelperState.columns)) {
@@ -157,6 +214,12 @@ export const initOrderHelper = ({
         dom.order.filter.preview = undefined;
         dom.order.tbody = undefined;
 
+        if (orderHelperState.sort === SORT.CUSTOM) {
+            const updatedBooks = ensureCustomDisplayIndex(book);
+            for (const bookName of updatedBooks) {
+                void saveWorldInfo(bookName, buildSavePayload(bookName), true);
+            }
+        }
         const entries = getOrderHelperEntries(book);
         const body = document.createElement('div'); {
             body.classList.add('stwid--orderHelper');
@@ -287,12 +350,17 @@ export const initOrderHelper = ({
                     sortWrap.append('Sort: ');
                     const sortSel = document.createElement('select'); {
                         sortSel.classList.add('text_pole');
+                        dom.order.sortSelect = sortSel;
                         appendSortOptions(sortSel, orderHelperState.sort, orderHelperState.direction);
-                        sortSel.addEventListener('change', ()=>{
+                        sortSel.addEventListener('change', async()=>{
                             const value = JSON.parse(sortSel.value);
-                            orderHelperState.sort = value.sort;
-                            orderHelperState.direction = value.direction;
-                            localStorage.setItem(ORDER_HELPER_SORT_STORAGE_KEY, JSON.stringify(value));
+                            setOrderHelperSort(value.sort, value.direction);
+                            if (value.sort === SORT.CUSTOM) {
+                                const updatedBooks = ensureCustomDisplayIndex(orderHelperState.book);
+                                for (const bookName of updatedBooks) {
+                                    await saveWorldInfo(bookName, buildSavePayload(bookName), true);
+                                }
+                            }
                             applyOrderHelperSortToDom();
                         });
                         sortWrap.append(sortSel);
@@ -569,6 +637,27 @@ export const initOrderHelper = ({
                         dom.order.tbody = tbody;
                         $(tbody).sortable({
                             delay: getSortableDelay(),
+                            update: async()=>{
+                                setOrderHelperSort(SORT.CUSTOM, SORT_DIRECTION.ASCENDING);
+                                const rows = getOrderHelperRows();
+                                const booksUpdated = new Set();
+                                const nextIndexByBook = new Map();
+                                for (const row of rows) {
+                                    const bookName = row.getAttribute('data-book');
+                                    const uid = row.getAttribute('data-uid');
+                                    const nextIndex = nextIndexByBook.get(bookName) ?? 0;
+                                    const entry = cache[bookName].entries[uid];
+                                    entry.extensions ??= {};
+                                    if (entry.extensions.display_index !== nextIndex) {
+                                        entry.extensions.display_index = nextIndex;
+                                        booksUpdated.add(bookName);
+                                    }
+                                    nextIndexByBook.set(bookName, nextIndex + 1);
+                                }
+                                for (const bookName of booksUpdated) {
+                                    await saveWorldInfo(bookName, buildSavePayload(bookName), true);
+                                }
+                            },
                         });
                         for (const e of entries) {
                             const tr = document.createElement('tr'); {
