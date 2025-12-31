@@ -15,7 +15,7 @@ module.exports = {
   },
   rules: {
     "no-undef": "error",
-    "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+    "no-unused-vars": ["error", { argsIgnorePattern: "^(_|evt)$" }],
     "no-unreachable": "error",
     eqeqeq: "warn",
     "no-redeclare": "error",
