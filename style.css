@@ -673,7 +673,7 @@ body.stwid-- #WorldInfo .stwid--editor [name="WIEntryBottomControls"] {
 .stwid--orderHelper .stwid--recursionOptions {
   display: flex;
   flex-direction: column;
-  gap: 0.35em;
+  gap: 0em;
   font-size: 0.85em;
 }
 .stwid--orderHelper .stwid--recursionRow {
